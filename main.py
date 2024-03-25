@@ -1,5 +1,8 @@
+import string
 from collections import UserDict
 from datetime import datetime, date
+import pickle
+import re
 
 
 class Field:
@@ -8,6 +11,7 @@ class Field:
 
     def __str__(self):
         return str(self.value)
+
 
 class Name(Field):
     def __init__(self, value):
@@ -123,10 +127,8 @@ class Record:
                 delta = birthday_now - today_data
             return delta.days
 
-
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}, birthday: {self.birthday}"
-
 
 
 class AddressBook(UserDict):
@@ -140,6 +142,29 @@ class AddressBook(UserDict):
         else:
             return None
 
+    def find_like(self, line):
+        find_list = []
+
+        if line.isalpha():
+            for key, val in self.data.items():
+                pattern = re.search(line, key)
+                if pattern:
+                    find_name = f"{key}: {val}"
+                    find_list.append(find_name)
+                continue
+            return find_list
+
+        elif line.isdigit():
+            for key, val in self.data.items():
+                for value in val.phones:
+                    pattern = re.search(line, str(value))
+                    if pattern:
+                        find_name = f"{val}"
+                        if find_name not in find_list:
+                            find_list.append(find_name)
+                    continue
+            return find_list
+
     def delete(self, name):
         if name in self.data.keys():
             del self.data[name]
@@ -149,8 +174,8 @@ class AddressBook(UserDict):
     def iterator(self, len_list):
         list_book = []
         start_ind = 0
-        for name, value in self.data.items():
-            list_book.append(f"{name}: {value}")
+        for key, value in self.data.items():
+            list_book.append(f"{key}: {value}")
 
         while True:
             my_list = list_book[start_ind:len_list]
@@ -159,6 +184,14 @@ class AddressBook(UserDict):
             yield my_list
             StopIteration
 
+    def serialization(self):
+        with open("book.bin", "wb") as fh:
+            pickle.dump(self, fh)
 
+    @staticmethod
+    def deserialization():
+        with open("book.bin", "rb") as fh:
+            unpacked = pickle.load(fh)
+            return unpacked
 
 
